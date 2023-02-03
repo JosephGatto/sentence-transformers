@@ -20,11 +20,12 @@ class Transformer(nn.Module):
     def __init__(self, model_name_or_path: str, max_seq_length: Optional[int] = None,
                  model_args: Dict = {}, cache_dir: Optional[str] = None,
                  tokenizer_args: Dict = {}, do_lower_case: bool = False,
-                 tokenizer_name_or_path : str = None):
+                 tokenizer_name_or_path : str = None,
+                 amr = False):
         super(Transformer, self).__init__()
         self.config_keys = ['max_seq_length', 'do_lower_case']
         self.do_lower_case = do_lower_case
-
+        self.amr = amr
         config = AutoConfig.from_pretrained(model_name_or_path, **model_args, cache_dir=cache_dir)
         self._load_model(model_name_or_path, config, cache_dir, **model_args)
 
@@ -118,7 +119,13 @@ class Transformer(nn.Module):
         if self.do_lower_case:
             to_tokenize = [[s.lower() for s in col] for col in to_tokenize]
 
-        output.update(self.tokenizer(*to_tokenize, padding=True, truncation='longest_first', return_tensors="pt", max_length=self.max_seq_length))
+        if self.amr:
+            to_tokenize = [[s.split() for s in col] for col in to_tokenize]
+            
+        if self.amr:        
+            output.update(self.tokenizer(*to_tokenize, padding=True, truncation='longest_first', return_tensors="pt", max_length=self.max_seq_length, is_split_into_words=True))
+        else:
+            output.update(self.tokenizer(*to_tokenize, padding=True, truncation='longest_first', return_tensors="pt", max_length=self.max_seq_length))
         return output
 
 
